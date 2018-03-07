@@ -567,6 +567,7 @@ seriesType('column', 'line', {
 			translatedThreshold = series.translatedThreshold =
 				yAxis.getThreshold(threshold),
 			minPointLength = pick(options.minPointLength, 5),
+			minPointLengthAppliesToZero = pick(options.minPointLengthAppliesToZero, true),
 			metrics = series.getColumnMetrics(),
 			pointWidth = metrics.width,
 			// postprocessed for border width
@@ -603,26 +604,28 @@ seriesType('column', 'line', {
 
 			// Handle options.minPointLength
 			if (minPointLength && Math.abs(barH) < minPointLength) {
-				barH = minPointLength;
-				up = (!yAxis.reversed && !point.negative) ||
-					(yAxis.reversed && point.negative);
+				if (minPointLengthAppliesToZero || barH !== 0) {
+					barH = minPointLength;
+					up = (!yAxis.reversed && !point.negative) ||
+						(yAxis.reversed && point.negative);
 
-				// Reverse zeros if there's no positive value in the series
-				// in visible range (#7046)
-				if (
-					point.y === threshold &&
-					series.dataMax <= threshold &&
-					yAxis.min < threshold // and if there's room for it (#7311)
-				) {
-					up = !up;
+					// Reverse zeros if there's no positive value in the series
+					// in visible range (#7046)
+					if (
+						point.y === threshold &&
+						series.dataMax <= threshold &&
+						yAxis.min < threshold // and if there's room for it (#7311)
+					) {
+						up = !up;
+					}
+
+					// If stacked...
+					barY = Math.abs(barY - translatedThreshold) > minPointLength ?
+							// ...keep position
+							yBottom - minPointLength :
+							// #1485, #4051
+							translatedThreshold - (up ? minPointLength : 0);
 				}
-
-				// If stacked...
-				barY = Math.abs(barY - translatedThreshold) > minPointLength ?
-						// ...keep position
-						yBottom - minPointLength :
-						// #1485, #4051
-						translatedThreshold - (up ? minPointLength : 0);
 			}
 
 			// Cache for access in polar
